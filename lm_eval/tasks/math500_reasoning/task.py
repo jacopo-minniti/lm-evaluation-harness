@@ -5,8 +5,8 @@ from . import utils
 class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
     VERSION = 2
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, config: dict = None, **kwargs):
+        super().__init__(config=config, **kwargs)
 
     def doc_to_text(self, doc: dict) -> str:
         # standard problem rendering (system prompt added in context)
