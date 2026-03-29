@@ -11,8 +11,9 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
         super().__init__(config=config, **kwargs)
 
     def doc_to_text(self, doc: dict, doc_to_text: str = None) -> str:
-        # standard problem rendering (system prompt added in context)
-        return f"Problem: {doc['problem']}\nAnswer:"
+        # Standard problem rendering. We leave the "Answer:" string to gen_prefix
+        # so it's placed correctly in both chat and base models.
+        return f"Problem: {doc['problem']}"
 
     def doc_to_target(self, doc: dict, doc_to_target: str = None) -> str:
         # include full reasoning/solution in demonstrations
@@ -24,14 +25,20 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
             "Please solve the following math problem. Provide your reasoning step-by-step. "
             "The final answer should be put at the end of the response inside \\boxed{}."
         )
-        # We must remove any existing system_instruction from kwargs 
-        # so we can provide our task-specific reasoning prompt instead.
         kwargs.pop("system_instruction", None)
         
+        # 🟢 Dynamic Prefix Strategy: 
+        # - For base models (no chat template): use "Answer:" as a clear completion trigger.
+        # - For instruct models (chat template): use an empty prefix for a clean multi-turn turn.
+        use_chat = kwargs.get("apply_chat_template", False)
+        # Note: We add a leading newline for base models to separate it from the problem.
+        gen_prefix = "\nAnswer:" if not use_chat else ""
+
         return super().fewshot_context(
             doc, 
             num_fewshot, 
-            system_instruction=system_prompt + "\n\n", 
+            system_instruction=system_prompt, 
+            gen_prefix=gen_prefix,
             **kwargs
         )
 
