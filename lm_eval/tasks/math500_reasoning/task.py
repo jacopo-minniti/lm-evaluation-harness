@@ -10,11 +10,11 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
             config.pop("class", None)
         super().__init__(config=config, **kwargs)
 
-    def doc_to_text(self, doc: dict) -> str:
+    def doc_to_text(self, doc: dict, doc_to_text: str = None) -> str:
         # standard problem rendering (system prompt added in context)
         return f"Problem: {doc['problem']}\nAnswer:"
 
-    def doc_to_target(self, doc: dict) -> str:
+    def doc_to_target(self, doc: dict, doc_to_target: str = None) -> str:
         # include full reasoning/solution in demonstrations
         return doc["solution"]
 
