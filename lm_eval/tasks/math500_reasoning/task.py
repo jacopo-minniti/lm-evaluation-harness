@@ -6,6 +6,8 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
     VERSION = 2
 
     def __init__(self, config: dict = None, **kwargs):
+        if config:
+            config.pop("class", None)
         super().__init__(config=config, **kwargs)
 
     def doc_to_text(self, doc: dict) -> str:

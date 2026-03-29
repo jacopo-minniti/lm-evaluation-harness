@@ -73,7 +73,7 @@ class TaskFactory:
         task_name = cfg["task"]
 
         if "class" in cfg:  # PY_TASK route
-            cls = cfg["class"]
+            cls = cfg.pop("class")
             obj = cls(config=cfg) if _ctor_accepts_config(cls) else cls()
             if hasattr(obj, "config") and hasattr(obj.config, "task"):
                 obj.config.task = task_name
