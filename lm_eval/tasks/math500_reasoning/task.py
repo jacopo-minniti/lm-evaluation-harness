@@ -18,18 +18,17 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
         # include full reasoning/solution in demonstrations
         return doc["solution"]
 
-    def fewshot_context(self, doc, num_fewshot, rnd=None, description=None, **kwargs):
+    def fewshot_context(self, doc, num_fewshot, **kwargs):
         # instructions specifying reasoning + boxed answer
         system_prompt = (
             "Please solve the following math problem. Provide your reasoning step-by-step. "
             "The final answer should be put at the end of the response inside \\boxed{}."
         )
-        # Prepend system prompt as task description
+        # In ConfigurableTask, the system prompt is passed as system_instruction
         return super().fewshot_context(
             doc, 
             num_fewshot, 
-            rnd=rnd, 
-            description=system_prompt + "\n\n", 
+            system_instruction=system_prompt + "\n\n", 
             **kwargs
         )
 
