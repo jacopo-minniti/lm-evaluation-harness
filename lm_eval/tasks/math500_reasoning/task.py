@@ -24,7 +24,10 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
             "Please solve the following math problem. Provide your reasoning step-by-step. "
             "The final answer should be put at the end of the response inside \\boxed{}."
         )
-        # In ConfigurableTask, the system prompt is passed as system_instruction
+        # We must remove any existing system_instruction from kwargs 
+        # so we can provide our task-specific reasoning prompt instead.
+        kwargs.pop("system_instruction", None)
+        
         return super().fewshot_context(
             doc, 
             num_fewshot, 
