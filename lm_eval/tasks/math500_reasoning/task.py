@@ -25,11 +25,14 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
             "Please solve the following math problem. Provide your reasoning step-by-step. "
             "The final answer should be put at the end of the response inside \\boxed{}."
         )
+        # We must pop both system_instruction and gen_prefix to avoid "multiple values" errors
+        # as they are already provided in the evaluation loop's kwargs.
         kwargs.pop("system_instruction", None)
+        kwargs.pop("gen_prefix", None)
         
         # 🟢 Dynamic Prefix Strategy: 
         # - For base models (no chat template): use "Answer:" as a clear completion trigger.
-        # - For instruct models (chat template): use an empty prefix for a clean multi-turn turn.
+        # - For instruct models (chat template): use an empty prefix for a clean multi-turn.
         use_chat = kwargs.get("apply_chat_template", False)
         # Note: We add a leading newline for base models to separate it from the problem.
         gen_prefix = "\nAnswer:" if not use_chat else ""
