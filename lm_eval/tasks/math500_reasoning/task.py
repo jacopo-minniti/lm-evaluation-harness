@@ -50,17 +50,21 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
         prediction = results[0]
         retval = 0
         
-        # 1. Find the boxed answer in prediction
-        extracted_pred_boxed = utils.last_boxed_only_string(prediction)
-        
-        # 2. Extract gold from solution
+        # 1. Extract gold from solution
         gold_boxed = utils.last_boxed_only_string(doc["solution"])
         gold = utils.remove_boxed(gold_boxed) if gold_boxed else doc.get("answer", "")
+        
+        # 2. Find the boxed answer in prediction
+        extracted_pred_boxed = utils.last_boxed_only_string(prediction)
         
         if extracted_pred_boxed:
             extracted_pred = utils.remove_boxed(extracted_pred_boxed)
             # 3. Normalizing and comparing (is_equiv handles latex/string normalization)
             if utils.is_equiv(extracted_pred, gold):
+                retval = 1
+        else:
+            # 4. Fallback Strategy: check final 10 chars if boxed is missing/incorrect
+            if utils.is_equiv_fallback(prediction, gold):
                 retval = 1
         
         return {"exact_match": retval}

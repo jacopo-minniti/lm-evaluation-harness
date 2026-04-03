@@ -1,5 +1,5 @@
 from typing import Dict, List
-
+import re
 import datasets
 
 
@@ -48,6 +48,52 @@ def is_equiv(str1, str2, verbose=False):
         return ss1 == ss2
     except Exception:
         return str1 == str2
+
+
+def is_equiv_fallback(prediction: str, gold: str) -> bool:
+    """
+    Fallback strategy for answer extraction. 
+    Checks the last 10 characters of the prediction for the gold answer.
+    Ensures safe matching to avoid false positives (e.g. '2' matching '22').
+    """
+    if not prediction or not gold:
+        return False
+    
+    # Extract the snippet (last 10 characters)
+    snippet = prediction[-10:].strip()
+    if not snippet:
+        return False
+        
+    normalized_gold = strip_string(gold)
+    
+    # 1. Direct match with normalization
+    if strip_string(snippet) == normalized_gold:
+        return True
+        
+    # 2. Careful regex matching within the snippet
+    # Determine the safest boundary patterns
+    if re.match(r'^-?\d+(\.\d+)?$', normalized_gold):
+        # Numeric boundary: avoid matching '2' inside '22'
+        pattern = rf'(?<!\d){re.escape(normalized_gold)}(?!\d)'
+    elif normalized_gold.isalnum():
+        # Alphanumeric word boundary: avoid matching 'pi' inside 'piece'
+        pattern = rf'(?<![a-zA-Z0-9]){re.escape(normalized_gold)}(?![a-zA-Z0-9])'
+    else:
+        # Complex symbols/LaTeX: just escape and check existence
+        pattern = re.escape(normalized_gold)
+    
+    # We also check the normalized snippet (to catch things like 'is 42')
+    # but we need to stay cautious about word boundaries in the original text.
+    if re.search(pattern, snippet):
+        return True
+        
+    # Try one more fuzzy check: if the gold is in the raw snippet but as a separate token
+    # This might catch some edge cases where strip_string was too aggressive
+    raw_pattern = rf'(?:\b|(?<=\W)){re.escape(gold)}(?:\b|(?=\W))'
+    if re.search(raw_pattern, snippet):
+        return True
+        
+    return False
 
 
 def remove_boxed(s):
@@ -175,6 +221,9 @@ def strip_string(string):
 
     # replace \\ with \
     string = string.replace("\\\\", "\\")
+
+    # normalize pi
+    string = string.replace("\\pi", "pi")
 
     # replace tfrac and dfrac with frac
     string = string.replace("tfrac", "frac")
