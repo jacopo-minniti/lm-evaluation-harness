@@ -156,6 +156,8 @@ def fix_fracs(string):
                     assert len(substr) >= 2
                 except AssertionError:
                     return string
+                if len(substr) < 2:
+                    continue
                 a = substr[0]
                 b = substr[1]
                 if b != "{":
