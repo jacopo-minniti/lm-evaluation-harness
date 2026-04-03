@@ -185,7 +185,7 @@ def fix_a_slash_b(string):
         assert string == "{}/{}".format(a, b)
         new_string = "\\frac{" + str(a) + "}{" + str(b) + "}"
         return new_string
-    except AssertionError:
+    except (ValueError, AssertionError):
         return string
 
 

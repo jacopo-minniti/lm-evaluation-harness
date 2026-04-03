@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List
 import lm_eval.api.task
 from . import utils
@@ -46,25 +47,34 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
         )
 
     def process_results(self, doc: dict, results: List[str]) -> Dict[str, int]:
-        # Extract last \boxed content from model response, normalize, and compare to gold
-        prediction = results[0]
-        retval = 0
-        
-        # 1. Extract gold from solution
-        gold_boxed = utils.last_boxed_only_string(doc["solution"])
-        gold = utils.remove_boxed(gold_boxed) if gold_boxed else doc.get("answer", "")
-        
-        # 2. Find the boxed answer in prediction
-        extracted_pred_boxed = utils.last_boxed_only_string(prediction)
-        
-        if extracted_pred_boxed:
-            extracted_pred = utils.remove_boxed(extracted_pred_boxed)
-            # 3. Normalizing and comparing (is_equiv handles latex/string normalization)
-            if utils.is_equiv(extracted_pred, gold):
-                retval = 1
-        else:
-            # 4. Fallback Strategy: check final 10 chars if boxed is missing/incorrect
-            if utils.is_equiv_fallback(prediction, gold):
-                retval = 1
-        
-        return {"exact_match": retval}
+        # Robust evaluation: wrap in try-except to prevent whole run crash on edge cases
+        try:
+            # Extract last \boxed content from model response, normalize, and compare to gold
+            prediction = results[0]
+            retval = 0
+            
+            # 1. Extract gold from solution
+            gold_boxed = utils.last_boxed_only_string(doc["solution"])
+            gold = utils.remove_boxed(gold_boxed) if gold_boxed else doc.get("answer", "")
+            
+            # 2. Find the boxed answer in prediction
+            extracted_pred_boxed = utils.last_boxed_only_string(prediction)
+            
+            if extracted_pred_boxed:
+                extracted_pred = utils.remove_boxed(extracted_pred_boxed)
+                # 3. Normalizing and comparing (is_equiv handles latex/string normalization)
+                if utils.is_equiv(extracted_pred, gold):
+                    retval = 1
+            else:
+                # 4. Fallback Strategy: check final 10 chars if boxed is missing/incorrect
+                if utils.is_equiv_fallback(prediction, gold):
+                    retval = 1
+            
+            return {"exact_match": retval}
+        except Exception as e:
+            logging.warning(
+                f"Evaluation failed for sample {doc.get('unique_id', 'unknown')} "
+                f"with error: {e}. Marking as incorrect (0)."
+            )
+            logging.error(f"Prediction that caused crash: {results[0]}")
+            return {"exact_match": 0}
