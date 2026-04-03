@@ -147,6 +147,8 @@ def fix_fracs(string):
         substrs = substrs[1:]
         for substr in substrs:
             new_str += "\\frac"
+            if not substr:
+                continue
             if substr[0] == "{":
                 new_str += substr
             else:
@@ -203,6 +205,8 @@ def fix_sqrt(string):
     splits = string.split("\\sqrt")
     new_string = splits[0]
     for split in splits[1:]:
+        if not split:
+            continue
         if split[0] != "{":
             a = split[0]
             new_substr = "\\sqrt{" + a + "}" + split[1:]
