@@ -324,6 +324,13 @@ class Run(SubCommand):
             help="Confirm understanding of unsafe code execution risks",
         )
         advanced_group.add_argument(
+            "--distributed_timeout",
+            type=int,
+            default=argparse.SUPPRESS,
+            metavar="<n>",
+            help="Timeout (in seconds) for distributed collective operations (default: 600)",
+        )
+        advanced_group.add_argument(
             "--metadata",
             type=json.loads,
             default=None,
@@ -413,6 +420,7 @@ class Run(SubCommand):
             fewshot_random_seed=cfg.seed[3] if cfg.seed else None,
             confirm_run_unsafe_code=cfg.confirm_run_unsafe_code,
             metadata=cfg.metadata,
+            distributed_timeout=cfg.distributed_timeout,
         )
 
         # Process results

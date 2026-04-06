@@ -360,9 +360,8 @@ class EvaluatorConfig:
 
         # Create task manager with metadata
         task_manager = TaskManager(
-            confirm_run_unsafe_code=self.confirm_run_unsafe_code,
+            include_path=self.include_path,
             metadata=self.metadata or {},
-            distributed_timeout=self.distributed_timeout,
         )
 
         # Normalize tasks to a list
