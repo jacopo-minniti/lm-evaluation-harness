@@ -2,7 +2,7 @@ task: math50_reasoning
 dataset_path: HuggingFaceH4/MATH-500
 dataset_name: default
 output_type: generate_until
-test_split: test[:50]
+test_split: test
 class: !function task.Math50Reasoning
 generation_kwargs:
   until:

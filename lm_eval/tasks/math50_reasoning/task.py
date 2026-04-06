@@ -1,5 +1,6 @@
 from lm_eval.tasks.math500_reasoning.task import Math500Reasoning
 
 class Math50Reasoning(Math500Reasoning):
-    # Simply inherit to use the same logic/fixes as the main task
-    pass
+    def test_docs(self):
+        # Override to slice only the first 50 docs for debugging
+        return super().test_docs().select(range(50))
