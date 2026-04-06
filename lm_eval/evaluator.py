@@ -483,7 +483,20 @@ def evaluate(
         )
     if samples is not None:
         eval_logger.info(f"Evaluating examples for tasks {list(samples.keys())}")
-    # tracks all Instances/requests a model must generate output on.
+
+    # Initialize distributed process group early if timeout is provided
+    # This prevents NCCL timeouts during long sampling steps
+    if distributed_timeout is not None:
+        import torch.distributed as dist
+        from datetime import timedelta
+        if not dist.is_initialized():
+             eval_logger.info(f"Initializing distributed process group with {distributed_timeout}s timeout")
+             dist.init_process_group(
+                 backend="nccl" if torch.cuda.is_available() else "gloo",
+                 timeout=timedelta(seconds=distributed_timeout)
+             )
+
+    # Tracks all Instances/requests a model must generate output on.
     requests = defaultdict(list)
     # stores the amount to pad out reqs per req. type so that
     # number of fwd passes per distributed rank is equal

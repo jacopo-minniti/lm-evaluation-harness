@@ -5,10 +5,11 @@ import datasets
 
 def process_docs(dataset: datasets.Dataset) -> datasets.Dataset:
     def _process_doc(doc: dict) -> dict:
+        boxed_str = last_boxed_only_string(doc["solution"])
         out_doc = {
             "problem": doc["problem"],
             "solution": doc["solution"],
-            "answer": remove_boxed(last_boxed_only_string(doc["solution"])),
+            "answer": remove_boxed(boxed_str) if boxed_str else doc.get("answer", ""),
         }
         return out_doc
 

@@ -38,6 +38,13 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
         # Note: We add a leading newline for base models to separate it from the problem.
         gen_prefix = "\nAnswer:" if not use_chat else ""
 
+        # 🟢 Pattern Consistency Enforcement:
+        # We must ensure few-shot examples use the same prefix ("\nAnswer:") as the target,
+        # otherwise base models fail to follow the reasoning format. 
+        # Update the config attribute directly as the harness defaults fewshots to no prefix.
+        if hasattr(self, "fewshot_cfg") and self.fewshot_cfg:
+            self.fewshot_cfg.gen_prefix = gen_prefix
+
         return super().fewshot_context(
             doc, 
             num_fewshot, 
