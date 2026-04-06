@@ -175,6 +175,13 @@ class EvaluatorConfig:
         metadata={"help": "Seeds for random, numpy, torch, fewshot (random)"},
     )
 
+    distributed_timeout: int = field(
+        default=600,
+        metadata={
+            "help": "Timeout (in seconds) for distributed collective operations (e.g. NCCL). Default: 600 (10 minutes)."
+        },
+    )
+
     # Security
     trust_remote_code: bool = field(
         default=False, metadata={"help": "Trust remote code for HF datasets"}
@@ -353,8 +360,9 @@ class EvaluatorConfig:
 
         # Create task manager with metadata
         task_manager = TaskManager(
-            include_path=self.include_path,
+            confirm_run_unsafe_code=self.confirm_run_unsafe_code,
             metadata=self.metadata or {},
+            distributed_timeout=self.distributed_timeout,
         )
 
         # Normalize tasks to a list

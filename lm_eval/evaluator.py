@@ -83,6 +83,7 @@ def simple_evaluate(
     fewshot_random_seed: int = DEFAULT_OTHER_SEED,
     confirm_run_unsafe_code: bool = False,
     metadata: dict[str, Any] | None = None,
+    distributed_timeout: int = 600,
 ) -> EvalResults | None:
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -226,8 +227,16 @@ def simple_evaluate(
             f"generation_kwargs: {gen_kwargs} specified through cli, these settings will update set parameters in yaml tasks. "
             "Ensure 'do_sample=True' for non-greedy decoding!"
         )
-        if not gen_kwargs:
-            gen_kwargs = None
+
+    if distributed_timeout:
+        import torch.distributed as dist
+        if not dist.is_initialized() and os.environ.get("RANK") is not None:
+            from datetime import timedelta
+            eval_logger.info(f"Initializing distributed process group with {distributed_timeout}s timeout")
+            dist.init_process_group(
+                backend="nccl" if torch.cuda.is_available() else "gloo",
+                timeout=timedelta(seconds=distributed_timeout),
+            )
 
     if isinstance(model, str):
         if model_args is None:
@@ -363,6 +372,7 @@ def simple_evaluate(
         fewshot_as_multiturn=fewshot_as_multiturn,
         verbosity=verbosity,
         confirm_run_unsafe_code=confirm_run_unsafe_code,
+        distributed_timeout=distributed_timeout,
     )
     if verbosity is not None:
         setup_logging(verbosity=verbosity)
@@ -399,6 +409,7 @@ def simple_evaluate(
                 "numpy_seed": numpy_random_seed,
                 "torch_seed": torch_random_seed,
                 "fewshot_seed": fewshot_random_seed,
+                "distributed_timeout": distributed_timeout,
             }
         )
         results["git_hash"] = get_git_commit_hash()
@@ -426,6 +437,7 @@ def evaluate(
     fewshot_as_multiturn: bool = False,
     verbosity: str = "INFO",
     confirm_run_unsafe_code: bool = False,
+    distributed_timeout: int = 600,
 ) -> EvalResults | None:
     """Instantiate and evaluate a model on a list of tasks.
 
