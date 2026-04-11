@@ -11,11 +11,6 @@ generation_kwargs:
     - "Problem:"
   do_sample: false
   temperature: 0
-filter_list:
-  - name: "math_verify"
-    filter:
-      - function: custom
-        filter_fn: !function utils.extract_answer
 metric_list:
   - metric: exact_match
     aggregation: mean
