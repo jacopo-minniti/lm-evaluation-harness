@@ -256,6 +256,16 @@ def exact_match_fn(**kwargs):
 
 
 @register_metric(
+    metric="math_equal_at_1",
+    higher_is_better=True,
+    output_type="generate_until",
+    aggregation="mean",
+)
+def math_equal_at_1_fn(items):
+    return items
+
+
+@register_metric(
     metric="perplexity",
     higher_is_better=False,
     output_type="loglikelihood",

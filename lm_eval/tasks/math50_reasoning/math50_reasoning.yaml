@@ -3,6 +3,7 @@ dataset_path: HuggingFaceH4/MATH-500
 dataset_name: default
 output_type: generate_until
 test_split: test
+process_results: process_results
 process_docs: !function utils.process_docs
 class: !function task.Math50Reasoning
 generation_kwargs:
@@ -13,7 +14,7 @@ generation_kwargs:
 filter_list:
   - name: "math_verify"
     filter:
-      - !function utils.extract_answer
+      - function: !function utils.extract_answer
 metric_list:
   - metric: exact_match
     aggregation: mean
