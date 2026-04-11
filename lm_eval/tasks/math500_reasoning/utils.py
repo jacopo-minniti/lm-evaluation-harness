@@ -1,22 +1,95 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 import re
 import datasets
+try:
+    from math_verify import parse, verify
+except ImportError:
+    parse = None
+    verify = None
 
 
 def process_docs(dataset: datasets.Dataset) -> datasets.Dataset:
     def _process_doc(doc: dict) -> dict:
-        boxed_str = last_boxed_only_string(doc["solution"])
         out_doc = {
             "problem": doc["problem"],
             "solution": doc["solution"],
-            "answer": remove_boxed(boxed_str) if boxed_str else doc.get("answer", ""),
+            "answer": "$" + str(doc["answer"]) + "$",
         }
         return out_doc
 
     return dataset.map(_process_doc)
 
 
-def process_results(doc: dict, results: List[str]) -> Dict[str, int]:
+# filters
+def extract_answer(
+    resps: List[List[str]], docs: List[Dict]
+) -> List[List[str]]:
+    if parse is None:
+        return resps
+    res = []
+    # each group is potentially multiple answers to one input
+    for resp_group in resps:
+        group_res = []
+        for resp in resp_group:
+            group_res.append(parse(resp))
+        res.append(group_res)
+    return res
+
+
+# filters
+def extract_answer_from_dict_resps(
+    resps: List[List[Dict]], docs: List[Dict]
+) -> List[List[Dict]]:
+    """Same as extract_answer() above but works when resps are dicts and not strings"""
+    if parse is None:
+        return resps
+    res = []
+    # each group is potentially multiple answers to one input
+    for resp_group in resps:
+        group_res = []
+        for resp in resp_group:
+            temp = {}
+            for k, v in resp.items():
+                if k == "resp":
+                    temp[k] = parse(v)
+                else:
+                    # pass all other fields as they are
+                    temp[k] = v
+            group_res.append(temp)
+        res.append(group_res)
+    return res
+
+
+def process_results(
+    doc, results: List[List[str]]
+) -> Dict[str, Union[float, List[float]]]:
+    # assume answer are extracted in numerical form
+    if parse is None or verify is None:
+        return {"math_equal_at_1": 0.0}
+    parsed_res = results[0]
+    ans = parse(doc["answer"])
+    # we expect only one answer in the list unless computing coverage so parsed_res[0]
+    correct = verify(ans, parsed_res[0])
+    return {"math_equal_at_1": float(correct)}
+
+
+def process_results_from_dict_resps(
+    doc, results: List[List[Dict]]
+) -> Dict[str, Union[float, List[float]]]:
+    # assume answer are extracted in numerical form
+    if parse is None or verify is None:
+        return {"math_equal_at_1": 0.0, "steps_taken": -1}
+    parsed_res = results[0]
+    ans = parse(doc["answer"])
+    # we expect only one answer in the list unless computing coverage so parsed_res[0]
+    correct = verify(ans, parsed_res[0]["resp"])
+    return {
+        "math_equal_at_1": float(correct),
+        "steps_taken": parsed_res[0].get("steps_taken", -1),
+    }
+
+
+def process_results_legacy(doc: dict, results: List[str]) -> Dict[str, int]:
     retval = 0
     indices = [pos for pos, char in enumerate(results[0]) if char == "$"]
     if len(indices) <= 1:
@@ -246,6 +319,7 @@ def strip_string(string):
 
     # remove dollar signs
     string = string.replace("\\$", "")
+    string = string.replace("$", "")
 
     # remove units (on the right)
     string = remove_right_units(string)

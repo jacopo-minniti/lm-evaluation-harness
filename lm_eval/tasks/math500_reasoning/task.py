@@ -53,14 +53,14 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
             **kwargs
         )
 
-    def process_results(self, doc: dict, results: List[str]) -> Dict[str, int]:
+    def process_results(self, doc: dict, results: List[str]) -> Dict[str, float]:
         # Robust evaluation: wrap in try-except to prevent whole run crash on edge cases
         try:
             # Extract last \boxed content from model response, normalize, and compare to gold
             prediction = results[0]
             retval = 0
             
-            # 1. Extract gold from solution
+            # 1. Extract gold from solution (Legacy logic)
             gold_boxed = utils.last_boxed_only_string(doc["solution"])
             gold = utils.remove_boxed(gold_boxed) if gold_boxed else doc.get("answer", "")
             
@@ -77,11 +77,23 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
                 if utils.is_equiv_fallback(prediction, gold):
                     retval = 1
             
-            return {"exact_match": retval}
+            results_dict = {"exact_match": float(retval)}
+
+            # 🟢 Augmented logic with math_verify
+            if utils.parse is not None and utils.verify is not None:
+                # We use the answer field which is processed by process_docs to be wrapped in $
+                gold_parsed = utils.parse(doc["answer"])
+                # We parse the raw prediction
+                pred_parsed = utils.parse(prediction)
+                # verify returns a boolean or list of booleans
+                is_correct = utils.verify(gold_parsed, pred_parsed)
+                results_dict["math_equal_at_1"] = float(is_correct)
+            
+            return results_dict
         except Exception as e:
             logging.warning(
                 f"Evaluation failed for sample {doc.get('unique_id', 'unknown')} "
                 f"with error: {e}. Marking as incorrect (0)."
             )
             logging.error(f"Prediction that caused crash: {results[0]}")
-            return {"exact_match": 0}
+            return {"exact_match": 0.0, "math_equal_at_1": 0.0}
