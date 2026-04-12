@@ -114,7 +114,50 @@ def key_val_to_dict(args: str) -> dict[str, Any]:
     if not args:
         return res
 
-    for k, v in (item.split("=", 1) for item in args.split(",")):
+    # Nested-aware split on commas (respects brackets, braces, parentheses, and quotes)
+    parts = []
+    current = []
+    depth = 0
+    in_quote = None
+    escaped = False
+    for char in args:
+        if escaped:
+            current.append(char)
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            current.append(char)
+            continue
+        if in_quote:
+            if char == in_quote:
+                in_quote = None
+            current.append(char)
+        elif char in "\"'":
+            in_quote = char
+            current.append(char)
+        elif char in "([{":
+            depth += 1
+            current.append(char)
+        elif char in ")]}":
+            depth -= 1
+            current.append(char)
+        elif char == "," and depth == 0:
+            parts.append("".join(current).strip())
+            current = []
+        else:
+            current.append(char)
+    parts.append("".join(current).strip())
+
+    for item in parts:
+        if not item:
+            continue
+        if "=" not in item:
+            eval_logger.warning(
+                f"Argument '{item}' does not contain '=' and will be ignored."
+            )
+            continue
+        k, v = item.split("=", 1)
         v = handle_cli_value_string(v)
         if k in res:
             eval_logger.warning(f"Overwriting key '{k}': {res[k]!r} -> {v!r}")
