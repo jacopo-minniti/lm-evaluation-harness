@@ -704,10 +704,15 @@ def evaluate(
         all_metrics = lm.gather_object(rank_metrics, dst=0)
         if RANK == 0:
             for task_name, acc in eval_results_acc.items():
-                for metric_key in acc["raw_metrics"]:
+                # Collect all metric keys for this task from all ranks
+                task_metric_keys = set()
+                for rank_data in all_metrics:
+                    task_metric_keys.update(rank_data[task_name].keys())
+
+                for metric_key in task_metric_keys:
                     acc["raw_metrics"][metric_key] = list(
                         itertools.chain.from_iterable(
-                            rank_data[task_name][metric_key]
+                            rank_data[task_name].get(metric_key, [])
                             for rank_data in all_metrics  # type: ignore
                         )
                     )

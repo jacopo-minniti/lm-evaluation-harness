@@ -88,12 +88,15 @@ class Math500Reasoning(lm_eval.api.task.ConfigurableTask):
                 # verify returns a boolean or list of booleans
                 is_correct = utils.verify(gold_parsed, pred_parsed)
                 results_dict["math_equal_at_1"] = float(is_correct)
+            else:
+                # Ensure the key exists even if math_verify is missing
+                results_dict["math_equal_at_1"] = 0.0
             
             return results_dict
         except Exception as e:
             logging.warning(
                 f"Evaluation failed for sample {doc.get('unique_id', 'unknown')} "
-                f"with error: {e}. Marking as incorrect (0)."
+                f"with error: {type(e).__name__}: {e}. Marking as incorrect (0)."
             )
             logging.error(f"Prediction that caused crash: {results[0]}")
             return {"exact_match": 0.0, "math_equal_at_1": 0.0}
