@@ -32,16 +32,38 @@ def build_predictions(resps: list[list[str]], docs: list[dict]) -> list[list[str
     return [[doc["prompt"] + r for r in resp] for resp, doc in zip(resps, docs)]
 
 
+import re
+
 def build_predictions_instruct(
     resps: list[list[str]], docs: list[dict]
 ) -> list[list[str]]:
-    return [
-        [
-            doc["prompt"] + (r if r.find("```") == -1 else r[: r.find("```")])
-            for r in resp
-        ]
-        for resp, doc in zip(resps, docs)
-    ]
+    predictions = []
+    for resp, doc in zip(resps, docs):
+        doc_preds = []
+        prompt = doc["prompt"]
+        for r in resp:
+            # 1. Try to extract code between ```python and ```
+            match = re.search(r'```(?:python)?\s*(.*?)```', r, re.DOTALL | re.IGNORECASE)
+            if match:
+                extracted = match.group(1)
+            else:
+                # 2. Try to extract if there's an opening ```python but no closing ```
+                match = re.search(r'```(?:python)?\s*(.*)', r, re.DOTALL | re.IGNORECASE)
+                if match:
+                    extracted = match.group(1)
+                else:
+                    # 3. Fallback: assume the model just generated pure code but might have trailing markdown
+                    extracted = r if r.find("```") == -1 else r[:r.find("```")]
+            
+            # If the model repeated the prompt inside the block, conditionally strip it
+            if extracted.lstrip().startswith(prompt.strip()):
+                extracted = extracted.lstrip()[len(prompt.strip()):]
+                if extracted.startswith('\n'):
+                    extracted = extracted[1:]
+
+            doc_preds.append(prompt + extracted)
+        predictions.append(doc_preds)
+    return predictions
 
 def take_first_15(dataset):
     return dataset.select(range(15))
