@@ -1,5 +1,9 @@
 import evaluate as hf_evaluate
 import multiprocessing
+import logging
+
+eval_logger = logging.getLogger("humaneval_utils")
+eval_logger.setLevel(logging.INFO)
 
 try:
     multiprocessing.set_start_method("spawn", force=True)
@@ -25,6 +29,7 @@ def pass_at_k(references: list[str], predictions: list[list[str]], k: list[int] 
         predictions=predictions,
         k=k,
     )
+    eval_logger.info(f"pass_at_k computed raw result: {res}")
     return res[0]
 
 
@@ -42,6 +47,8 @@ def build_predictions_instruct(
         doc_preds = []
         prompt = doc["prompt"]
         for r in resp:
+            eval_logger.info(f"\n[DEBUG] === Raw Model Output ===\n{r}\n================================")
+            
             # 1. Try to extract code between ```python and ```
             match = re.search(r'```(?:python)?\s*(.*?)```', r, re.DOTALL | re.IGNORECASE)
             if match:
@@ -61,7 +68,12 @@ def build_predictions_instruct(
                 if extracted.startswith('\n'):
                     extracted = extracted[1:]
 
-            doc_preds.append(prompt + extracted)
+            eval_logger.info(f"\n[DEBUG] === Extracted Code Segment ===\n{extracted}\n======================================")
+            
+            final_code = prompt + extracted
+            eval_logger.info(f"\n[DEBUG] === Final Full Code Program ===\n{final_code}\n=======================================")
+            
+            doc_preds.append(final_code)
         predictions.append(doc_preds)
     return predictions
 
