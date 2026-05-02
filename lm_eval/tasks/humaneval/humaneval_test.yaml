@@ -1,0 +1,3 @@
+include: humaneval.yaml
+task: humaneval_test
+test_split: test[:15]
