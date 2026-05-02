@@ -1,5 +1,10 @@
 import evaluate as hf_evaluate
+import multiprocessing
 
+try:
+    multiprocessing.set_start_method("spawn", force=True)
+except RuntimeError:
+    pass
 
 try:
     compute_ = hf_evaluate.load("code_eval")
