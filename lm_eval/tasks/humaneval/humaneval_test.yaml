@@ -1,3 +1,4 @@
 include: humaneval.yaml
 task: humaneval_test
-test_split: test[:15]
+test_split: test
+process_docs: !function utils.take_first_15

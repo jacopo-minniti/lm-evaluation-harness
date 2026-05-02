@@ -37,3 +37,6 @@ def build_predictions_instruct(
         ]
         for resp, doc in zip(resps, docs)
     ]
+
+def take_first_15(dataset):
+    return dataset.select(range(15))
