@@ -485,9 +485,10 @@ def evaluate(
     if samples is not None:
         eval_logger.info(f"Evaluating examples for tasks {list(samples.keys())}")
 
-    # Initialize distributed process group early if timeout is provided
-    # This prevents NCCL timeouts during long sampling steps
-    if distributed_timeout is not None:
+    # Initialize distributed process group early if timeout is provided and we are
+    # actually in a distributed launch (RANK env var is set by torchrun/accelerate).
+    if distributed_timeout is not None and os.environ.get("RANK") is not None:
+        import torch
         import torch.distributed as dist
         from datetime import timedelta
         if not dist.is_initialized():
