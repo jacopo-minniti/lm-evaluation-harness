@@ -84,3 +84,7 @@ def list_fewshot_samples():
             "is_fewshot": True,
         },
     ]
+
+
+def take_first_10(dataset):
+    return dataset.select(range(10))

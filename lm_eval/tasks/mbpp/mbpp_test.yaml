@@ -1,0 +1,10 @@
+include: mbpp.yaml
+task: mbpp_test
+test_split: test
+process_docs: !function utils.take_first_10
+
+filter_list:
+  - name: "extract_code"
+    filter:
+      - function: "custom"
+        filter_fn: !function utils.build_predictions
